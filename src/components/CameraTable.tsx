@@ -9,15 +9,22 @@ import {
   ArrowUpDown,
   Search,
   Eye,
-  Camera
+  Camera,
+  ExternalLink,
+  MapPin
 } from 'lucide-react';
 
 interface CameraTableProps {
   cameras: CameraAggregate[];
   onSelectCamera: (cam: CameraAggregate) => void;
+  onViewLocation?: (data: { camera: string; site?: string; url: string }) => void;
 }
 
-export const CameraTable: React.FC<CameraTableProps> = ({ cameras, onSelectCamera }) => {
+export const CameraTable: React.FC<CameraTableProps> = ({
+  cameras,
+  onSelectCamera,
+  onViewLocation
+}) => {
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'P1' | 'P2' | 'noEvidence'>('all');
   const [tableSearch, setTableSearch] = useState('');
   const [sortField, setSortField] = useState<'count' | 'priority' | 'camera' | 'site'>('priority');
@@ -205,8 +212,8 @@ export const CameraTable: React.FC<CameraTableProps> = ({ cameras, onSelectCamer
                 </div>
               </th>
               <th className="py-3 px-4">Ngày gần nhất</th>
-              <th className="py-3 px-4">Người phụ trách</th>
               <th className="py-3 px-4 text-center">Minh chứng</th>
+              <th className="py-3 px-4 text-center">Vị trí</th>
               <th className="py-3 px-4 text-right">Chi tiết</th>
             </tr>
           </thead>
@@ -304,11 +311,6 @@ export const CameraTable: React.FC<CameraTableProps> = ({ cameras, onSelectCamer
                       {cam.last}
                     </td>
 
-                    {/* Owner */}
-                    <td className="py-3 px-4 text-[#475569] whitespace-nowrap">
-                      {cam.owner}
-                    </td>
-
                     {/* Evidence */}
                     <td className="py-3 px-4 text-center whitespace-nowrap">
                       {cam.evidence ? (
@@ -321,6 +323,34 @@ export const CameraTable: React.FC<CameraTableProps> = ({ cameras, onSelectCamer
                           <AlertCircle className="w-3 h-3 text-rose-600" />
                           Thiếu
                         </span>
+                      )}
+                    </td>
+
+                    {/* Location Link (Link mô tả vị trí) */}
+                    <td className="py-3 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      {cam.locationLink ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onViewLocation) {
+                              onViewLocation({
+                                camera: cam.camera,
+                                site: cam.site,
+                                url: cam.locationLink!
+                              });
+                            } else {
+                              window.open(cam.locationLink, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          title="Bấm để xem trực tiếp ảnh vị trí camera trên web"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 transition-colors shadow-2xs group/loc cursor-pointer"
+                        >
+                          <MapPin className="w-3 h-3 text-blue-500 group-hover/loc:text-white" />
+                          <span>Vị trí</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 group-hover/loc:bg-white flex-shrink-0" />
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-[#94a3b8] italic">—</span>
                       )}
                     </td>
 

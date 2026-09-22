@@ -67,6 +67,7 @@ export function parseGoogleSheetCSV(csvText: string): RawCheckRow[] {
     const fixed = parts[9] ? parts[9].trim().toUpperCase() === 'TRUE' : false;
     const linkViTri = parts[7] ? parts[7].trim() : '';
     const evidence = linkViTri.length > 0 && !linkViTri.includes('#N/A');
+    const locationLink = linkViTri.startsWith('http') ? linkViTri : undefined;
 
     if (camera && site) {
       rows.push({
@@ -76,7 +77,8 @@ export function parseGoogleSheetCSV(csvText: string): RawCheckRow[] {
         status,
         owner,
         fixed,
-        evidence
+        evidence,
+        locationLink
       });
     }
   }

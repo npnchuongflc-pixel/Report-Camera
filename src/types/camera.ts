@@ -8,6 +8,7 @@ export interface RawCheckRow {
   owner: string;      // Người phụ trách
   fixed: boolean;     // Đã xác nhận khắc phục
   evidence: boolean;  // Có hình ảnh minh chứng
+  locationLink?: string; // Link mô tả vị trí camera
 }
 
 export type PriorityLevel = 'P1' | 'P2';
@@ -23,6 +24,7 @@ export interface CameraAggregate {
   last: string;        // Ngày gần nhất ghi nhận
   status: CameraStatus;// Tình trạng gần nhất
   evidence: boolean;   // Có minh chứng
+  locationLink?: string; // Link mô tả vị trí camera
   priority: PriorityLevel;
   totalChecks: number; // Tổng số lượt kiểm tra của camera này
   records: RawCheckRow[]; // Toàn bộ lịch sử kiểm tra
@@ -88,6 +90,7 @@ export interface DefectiveCameraReport {
   diagnostics: string;
   recommendedAction: string;
   currentCondition: 'Đang mất kết nối' | 'Đang chập chờn' | 'Tái diễn liên tục';
+  locationLink?: string; // Link mô tả vị trí camera (từ cột D / cột mô tả vị trí)
 }
 
 export interface InspectionDayInfo {

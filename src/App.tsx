@@ -18,6 +18,7 @@ import { ChartsSection } from './components/ChartsSection';
 import { CameraTable } from './components/CameraTable';
 import { DefectiveCamerasReportTable } from './components/DefectiveCamerasReportTable';
 import { CameraDetailModal } from './components/CameraDetailModal';
+import { LocationPreviewModal, LocationPreviewData } from './components/LocationPreviewModal';
 import { Footer } from './components/Footer';
 
 const INITIAL_FILTERS: FilterOptions = {
@@ -35,6 +36,7 @@ export default function App() {
   const [filters, setFilters] = useState<FilterOptions>(INITIAL_FILTERS);
   const [inspectionDate, setInspectionDate] = useState<string>('2026-09-22');
   const [selectedCamera, setSelectedCamera] = useState<CameraAggregate | null>(null);
+  const [activeLocationPreview, setActiveLocationPreview] = useState<LocationPreviewData | null>(null);
 
   // Live Google Sheet State
   const [liveRecords, setLiveRecords] = useState<RawCheckRow[] | null>(null);
@@ -237,6 +239,7 @@ export default function App() {
         <CameraTable
           cameras={cameraList}
           onSelectCamera={setSelectedCamera}
+          onViewLocation={setActiveLocationPreview}
         />
 
         {/* Báo Cáo Thống Kê Hiện Trạng Camera Đang Hư (Ở phía dưới cùng) */}
@@ -249,6 +252,7 @@ export default function App() {
           onInspectionDateChange={setInspectionDate}
           onSelectCamera={setSelectedCamera}
           onExportCSV={handleExportDefectiveCSV}
+          onViewLocation={setActiveLocationPreview}
         />
       </main>
 
@@ -256,6 +260,13 @@ export default function App() {
       <CameraDetailModal
         camera={selectedCamera}
         onClose={() => setSelectedCamera(null)}
+        onViewLocation={setActiveLocationPreview}
+      />
+
+      {/* Direct In-App Location Image & Preview Modal */}
+      <LocationPreviewModal
+        data={activeLocationPreview}
+        onClose={() => setActiveLocationPreview(null)}
       />
 
       {/* Application Footer */}

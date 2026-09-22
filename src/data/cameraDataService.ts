@@ -1,6 +1,7 @@
 import { RawTuple, RAW_PART_1 } from './rawPart1';
 import { RAW_PART_2 } from './rawPart2';
 import { MONTH_BENCHMARKS } from './benchmarks';
+import { getCameraLocationLink } from './cameraLocations';
 import {
   RawCheckRow,
   CameraAggregate,
@@ -272,6 +273,7 @@ export function computeDashboardData(
         last: c.last,
         status: c.status || 'Chưa xác định',
         evidence: c.evidence,
+        locationLink: getCameraLocationLink(c.camera),
         priority,
         totalChecks: cameraChecksMap.get(c.camera) || c.count,
         records: filteredChecks.filter((r) => r.camera === c.camera)
@@ -292,6 +294,7 @@ export function computeDashboardData(
           last: r.date,
           status: r.status,
           evidence: false,
+          locationLink: getCameraLocationLink(r.camera, r.locationLink),
           priority: 'P2',
           totalChecks: cameraChecksMap.get(r.camera) || 0,
           records: []
@@ -301,6 +304,9 @@ export function computeDashboardData(
       const item = cameraMap.get(r.camera)!;
       item.count++;
       item.evidence = item.evidence || r.evidence;
+      if (!item.locationLink && r.locationLink) {
+        item.locationLink = r.locationLink;
+      }
       item.records.push(r);
 
       if (r.status === 'Mất kết nối') item.lost++;
@@ -584,6 +590,7 @@ export function computeDashboardData(
       unstableCount,
       isFixed: rec.fixed,
       hasEvidence: rec.evidence,
+      locationLink: getCameraLocationLink(rec.camera, rec.locationLink),
       severity,
       diagnostics,
       recommendedAction,
@@ -630,7 +637,7 @@ export function computeDashboardData(
 
 // CSV Export functionality
 export function exportCameraDataToCSV(cameras: CameraAggregate[]): string {
-  const headers = ['Mức ưu tiên', 'Cơ sở', 'Mã Camera', 'Tình trạng gần nhất', 'Số lần tái diễn', 'Mất kết nối', 'Chập chờn', 'Ngày gần nhất', 'Người phụ trách', 'Minh chứng'];
+  const headers = ['Mức ưu tiên', 'Cơ sở', 'Mã Camera', 'Tình trạng gần nhất', 'Số lần tái diễn', 'Mất kết nối', 'Chập chờn', 'Ngày gần nhất', 'Minh chứng', 'Link mô tả vị trí'];
   const rows = cameras.map((c) => [
     c.priority,
     `"${c.site}"`,
@@ -640,8 +647,8 @@ export function exportCameraDataToCSV(cameras: CameraAggregate[]): string {
     c.lost,
     c.unstable,
     c.last,
-    `"${c.owner}"`,
-    c.evidence ? 'Có' : 'Thiếu'
+    c.evidence ? 'Có' : 'Thiếu',
+    `"${c.locationLink || ''}"`
   ]);
 
   return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -661,7 +668,7 @@ export function exportDefectiveCamerasToCSV(defectiveList: DefectiveCameraReport
     'Số lần tái diễn',
     'Mất kết nối (lần)',
     'Chập chờn (lần)',
-    'Người phụ trách'
+    'Link mô tả vị trí'
   ];
 
   const rows = defectiveList.map((d) => [
@@ -676,7 +683,7 @@ export function exportDefectiveCamerasToCSV(defectiveList: DefectiveCameraReport
     d.totalIncidents,
     d.lostCount,
     d.unstableCount,
-    `"${d.owner}"`
+    `"${d.locationLink || ''}"`
   ]);
 
   return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');

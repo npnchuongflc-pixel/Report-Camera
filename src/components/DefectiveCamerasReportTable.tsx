@@ -11,10 +11,11 @@ import {
   CheckCircle2,
   Calendar,
   Clock,
-  User,
   MapPin,
   ChevronRight,
-  Filter
+  Filter,
+  ExternalLink,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface DefectiveCamerasReportTableProps {
@@ -26,6 +27,7 @@ interface DefectiveCamerasReportTableProps {
   onInspectionDateChange: (date: string) => void;
   onSelectCamera: (cam: CameraAggregate) => void;
   onExportCSV: () => void;
+  onViewLocation?: (data: { camera: string; site?: string; url: string }) => void;
 }
 
 export const DefectiveCamerasReportTable: React.FC<DefectiveCamerasReportTableProps> = ({
@@ -35,7 +37,8 @@ export const DefectiveCamerasReportTable: React.FC<DefectiveCamerasReportTablePr
   inspectionDayInfo,
   onInspectionDateChange,
   onSelectCamera,
-  onExportCSV
+  onExportCSV,
+  onViewLocation
 }) => {
   const [filterCondition, setFilterCondition] = useState<'all' | 'lost' | 'unstable'>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -290,9 +293,9 @@ export const DefectiveCamerasReportTable: React.FC<DefectiveCamerasReportTablePr
           <thead>
             <tr className="bg-[#fff1f2] text-[#9f1239] border-b border-[#fecdd3] font-bold uppercase tracking-wider text-[11px]">
               <th className="py-2.5 px-4">Mã Camera & Cơ Sở</th>
+              <th className="py-2.5 px-4">Vị Trí Lắp Đặt</th>
               <th className="py-2.5 px-4">Tình Trạng Hiện Trạng</th>
               <th className="py-2.5 px-4">Lần Bị / Gần Nhất</th>
-              <th className="py-2.5 px-4">Phụ Trách</th>
               <th className="py-2.5 px-4 text-right">Thao Tác</th>
             </tr>
           </thead>
@@ -350,6 +353,36 @@ export const DefectiveCamerasReportTable: React.FC<DefectiveCamerasReportTablePr
                       </div>
                     </td>
 
+                    {/* Location Link (Link mô tả vị trí) */}
+                    <td className="py-3 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      {item.locationLink ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onViewLocation) {
+                              onViewLocation({
+                                camera: item.camera,
+                                site: item.site,
+                                url: item.locationLink!
+                              });
+                            } else {
+                              window.open(item.locationLink, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          title="Bấm để xem trực tiếp ảnh vị trí lắp đặt camera trên web"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 transition-all shadow-2xs group/link cursor-pointer"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5 text-blue-500 group-hover/link:text-white flex-shrink-0" />
+                          <span>Xem vị trí</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 group-hover/link:bg-white flex-shrink-0" />
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-[#94a3b8] italic">
+                          Chưa có link
+                        </span>
+                      )}
+                    </td>
+
                     {/* Current Condition */}
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span
@@ -375,14 +408,6 @@ export const DefectiveCamerasReportTable: React.FC<DefectiveCamerasReportTablePr
                       </div>
                       <div className="text-[10px] text-[#64748b]">
                         Gần nhất: <b className="text-[#334155]">{item.latestIssueDate}</b>
-                      </div>
-                    </td>
-
-                    {/* Owner */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1 text-xs text-[#475569]">
-                        <User className="w-3 h-3 text-[#f59e0b]" />
-                        <span>{item.owner}</span>
                       </div>
                     </td>
 

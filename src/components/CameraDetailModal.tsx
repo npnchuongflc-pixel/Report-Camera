@@ -6,23 +6,26 @@ import {
   Camera,
   AlertTriangle,
   Clock,
-  User,
   MapPin,
   CheckCircle,
   AlertCircle,
   Wrench,
   CheckSquare2,
-  Calendar
+  Calendar,
+  ExternalLink,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface CameraDetailModalProps {
   camera: CameraAggregate | null;
   onClose: () => void;
+  onViewLocation?: (data: { camera: string; site?: string; url: string }) => void;
 }
 
 export const CameraDetailModal: React.FC<CameraDetailModalProps> = ({
   camera,
-  onClose
+  onClose,
+  onViewLocation
 }) => {
   if (!camera) return null;
 
@@ -62,12 +65,36 @@ export const CameraDetailModal: React.FC<CameraDetailModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#64748b] m-0 mt-0.5 flex items-center gap-1.5">
-                <MapPin className="w-3 h-3 text-[#19a78e]" />
-                <span className="font-semibold text-[#334155]">{camera.site}</span>
-                <span>•</span>
-                <User className="w-3 h-3 text-[#f4a340]" />
-                <span>Phụ trách: {camera.owner}</span>
+              <p className="text-xs text-[#64748b] m-0 mt-0.5 flex flex-wrap items-center gap-2">
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-[#19a78e]" />
+                  <span className="font-semibold text-[#334155]">{camera.site}</span>
+                </span>
+                {camera.locationLink && (
+                  <>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onViewLocation) {
+                          onViewLocation({
+                            camera: camera.camera,
+                            site: camera.site,
+                            url: camera.locationLink!
+                          });
+                        } else {
+                          window.open(camera.locationLink, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
+                      title="Xem trực tiếp ảnh vị trí lắp đặt trên web"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <ImageIcon className="w-3 h-3 text-blue-500 hover:text-white" />
+                      <span>Xem ảnh vị trí lắp đặt</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 hover:bg-white" />
+                    </button>
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -155,9 +182,26 @@ export const CameraDetailModal: React.FC<CameraDetailModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="text-[#64748b] text-[11px] hidden sm:inline">
-                        {r.owner}
-                      </span>
+                      {r.locationLink && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onViewLocation) {
+                              onViewLocation({
+                                camera: camera.camera,
+                                site: camera.site,
+                                url: r.locationLink!
+                              });
+                            } else {
+                              window.open(r.locationLink, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                        >
+                          <ImageIcon className="w-3 h-3 text-blue-500" />
+                          <span>Xem vị trí</span>
+                        </button>
+                      )}
                       {r.evidence ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
                           <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
