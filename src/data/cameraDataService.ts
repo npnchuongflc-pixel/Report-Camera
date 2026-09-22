@@ -8,7 +8,10 @@ import {
   SiteStats,
   DailyTrendPoint,
   FilterOptions,
-  PriorityLevel
+  PriorityLevel,
+  DefectiveCameraReport,
+  CameraStatus,
+  InspectionDayInfo
 } from '../types/camera';
 
 // Exact mapping of items with missing evidence from original HTML
@@ -192,7 +195,7 @@ export function formatPctVN(a: number, b: number): string {
 }
 
 // Filtering and aggregation engine
-export function computeDashboardData(filters: FilterOptions) {
+export function computeDashboardData(filters: FilterOptions, targetInspectionDate?: string) {
   const { dateFrom, dateTo, site, owner, status, searchQuery, evidenceOnly, periodMonth } = filters;
 
   // Check if we can use the official benchmark directly when looking at a clean month without sub-filters
@@ -481,9 +484,116 @@ export function computeDashboardData(filters: FilterOptions) {
     insightTag = 'Tình trạng tốt';
   }
 
+  // Generate Defective Cameras Report strictly for the target inspection date (ngày kiểm tra)
+  // Nếu ngày được chọn chưa có dữ liệu trong hệ thống (ví dụ ngày tương lai/chưa nhập), danh sách sẽ là rỗng
+  const inspectionDate = targetInspectionDate || (dateTo >= MAX_DATA_DATE ? MAX_DATA_DATE : dateTo);
+
+  // Check records specifically on this target inspection date
+  const dayRecords = ALL_RAW_RECORDS.filter((r) => r.date === inspectionDate);
+  const dayHasRecords = dayRecords.length > 0;
+
+  // Filter only broken/defective cameras on that date
+  const defectiveOnDay = dayRecords.filter((r) => {
+    const isDefective = r.status === 'Mất kết nối' || r.status === 'Chập chờn';
+    if (!isDefective) return false;
+    if (site !== 'all' && r.site !== site) return false;
+    if (owner !== 'all' && r.owner !== owner) return false;
+    if (status !== 'all' && r.status !== status) return false;
+    return true;
+  });
+
+  const defectiveCamerasReport: DefectiveCameraReport[] = defectiveOnDay.map((rec) => {
+    // Find all historical issues for this camera up to inspectionDate
+    const history = ALL_RAW_RECORDS.filter(
+      (r) => r.camera === rec.camera && r.date <= inspectionDate && (r.status === 'Mất kết nối' || r.status === 'Chập chờn')
+    ).sort((a, b) => a.date.localeCompare(b.date));
+
+    const totalIncidents = history.length;
+    const lostCount = history.filter((r) => r.status === 'Mất kết nối').length;
+    const unstableCount = history.filter((r) => r.status === 'Chập chờn').length;
+    const firstIssueDate = history.length > 0 ? formatDateVN(history[0].date) : formatDateVN(rec.date);
+    const latestIssueDate = formatDateVN(rec.date);
+    const isLost = rec.status === 'Mất kết nối';
+
+    let diagnostics = '';
+    let recommendedAction = '';
+
+    if (rec.camera === 'HDC5') {
+      diagnostics = `Mất kết nối ngày ${latestIssueDate}. Nghi ngờ hỏng adapter nguồn PoE hoặc đứt ngầm dây cáp mạng RJ45 từ switch tầng.`;
+      recommendedAction = 'Đo kiểm điện áp nguồn PoE 48V, bấm lại jack RJ45 hoặc thay thế adapter nguồn.';
+    } else if (rec.camera === 'HDC1' || rec.camera === 'HDC2' || rec.camera === 'HDC7') {
+      diagnostics = `Chập chờn tín hiệu ngày ${latestIssueDate} (tái diễn ${totalIncidents} lần). Suy hao cáp mạng, nghẽn luồng RTSP camera hoặc lỏng đầu bấm.`;
+      recommendedAction = 'Bấm lại đầu cáp mạng RJ45, cấu hình luồng phụ (Sub-stream) và kiểm tra cổng switch.';
+    } else if (rec.camera === 'HDC3') {
+      diagnostics = `Tín hiệu chập chờn ngày ${latestIssueDate}. Switch mạng phòng học quá tải lưu lượng.`;
+      recommendedAction = 'Khởi động lại switch tầng, cắm chuyển sang cổng LAN Gigabit dự phòng.';
+    } else if (rec.camera === 'BTC1') {
+      diagnostics = `Mất kết nối ngày ${latestIssueDate}. Nghi ngờ tuột giắc cắm hoặc nguồn adapter bị chập.`;
+      recommendedAction = 'Cử kỹ thuật viên kiểm tra trực tiếp nguồn camera tại Bình Tân, thay dây nguồn nếu cần.';
+    } else if (rec.camera === 'GGM6') {
+      diagnostics = `Mất kết nối ngày ${latestIssueDate}. Reset thiết bị chưa duy trì được tín hiệu ổn định.`;
+      recommendedAction = 'Đo kiểm độ ổn định tín hiệu trong 48h, gắn thiết bị chống sét lan truyền.';
+    } else if (rec.camera === 'TBC0') {
+      diagnostics = `Mất kết nối ngày ${latestIssueDate}. Mất nguồn điện cấp cho switch chi nhánh hoặc hỏng bộ đổi nguồn.`;
+      recommendedAction = 'Kiểm tra ổ cắm điện nguồn trung tâm cơ sở Tân Bình và thay bộ cấp nguồn.';
+    } else if (isLost) {
+      diagnostics = `Mất kết nối hoàn toàn ngày ${latestIssueDate}. Camera không nhận địa chỉ IP trong mạng nội bộ, mất nguồn hoặc đứt cáp LAN.`;
+      recommendedAction = 'Kiểm tra đèn tín hiệu cổng LAN camera, thay thế nguồn adapter 12V/PoE.';
+    } else {
+      diagnostics = `Tín hiệu chập chờn ngày ${latestIssueDate} (${totalIncidents} lần tái diễn). Hình ảnh giật lag hoặc mất khung hình.`;
+      recommendedAction = 'Vệ sinh ống kính, bấm lại hạt mạng RJ45 và tối ưu hóa băng thông camera.';
+    }
+
+    let severity: 'Khẩn cấp (Mất tín hiệu)' | 'Cảnh báo (Chập chờn)' | 'Cần theo dõi';
+    if (isLost || lostCount >= 3) {
+      severity = 'Khẩn cấp (Mất tín hiệu)';
+    } else if (totalIncidents >= 5) {
+      severity = 'Cảnh báo (Chập chờn)';
+    } else {
+      severity = 'Cần theo dõi';
+    }
+
+    let currentCondition: 'Đang mất kết nối' | 'Đang chập chờn' | 'Tái diễn liên tục';
+    if (isLost) {
+      currentCondition = 'Đang mất kết nối';
+    } else if (totalIncidents >= 7) {
+      currentCondition = 'Tái diễn liên tục';
+    } else {
+      currentCondition = 'Đang chập chờn';
+    }
+
+    return {
+      camera: rec.camera,
+      site: rec.site,
+      owner: rec.owner,
+      inspectionDate: rec.date,
+      currentStatus: rec.status as CameraStatus,
+      firstIssueDate,
+      latestIssueDate,
+      consecutiveDays: totalIncidents,
+      totalIncidents,
+      lostCount,
+      unstableCount,
+      isFixed: rec.fixed,
+      hasEvidence: rec.evidence,
+      severity,
+      diagnostics,
+      recommendedAction,
+      currentCondition
+    };
+  });
+
   return {
     kpis,
     cameraList,
+    defectiveCamerasReport,
+    inspectionDayInfo: {
+      date: inspectionDate,
+      hasRecords: dayHasRecords,
+      totalRecords: dayRecords.length,
+      defectiveCount: defectiveOnDay.length,
+      latestAvailableDate: MAX_DATA_DATE
+    },
     siteStatsList: displayedSites,
     dailyTrends,
     insight: {
@@ -524,6 +634,41 @@ export function exportCameraDataToCSV(cameras: CameraAggregate[]): string {
     c.last,
     `"${c.owner}"`,
     c.evidence ? 'Có' : 'Thiếu'
+  ]);
+
+  return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+}
+
+// CSV Export for Defective Cameras Report
+export function exportDefectiveCamerasToCSV(defectiveList: DefectiveCameraReport[]): string {
+  const headers = [
+    'Ngày kiểm tra',
+    'Mã Camera',
+    'Cơ sở',
+    'Tình trạng hiện trạng',
+    'Phân loại hiện trạng',
+    'Mức độ nghiêm trọng',
+    'Ngày phát hiện đầu',
+    'Ngày bị lỗi gần nhất',
+    'Số lần tái diễn',
+    'Mất kết nối (lần)',
+    'Chập chờn (lần)',
+    'Người phụ trách'
+  ];
+
+  const rows = defectiveList.map((d) => [
+    formatDateVN(d.inspectionDate),
+    d.camera,
+    `"${d.site}"`,
+    `"${d.currentStatus}"`,
+    `"${d.currentCondition}"`,
+    `"${d.severity}"`,
+    d.firstIssueDate,
+    d.latestIssueDate,
+    d.totalIncidents,
+    d.lostCount,
+    d.unstableCount,
+    `"${d.owner}"`
   ]);
 
   return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');

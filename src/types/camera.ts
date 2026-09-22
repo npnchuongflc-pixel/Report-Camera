@@ -69,3 +69,31 @@ export interface FilterOptions {
   searchQuery: string;
   evidenceOnly: boolean;
 }
+
+export interface DefectiveCameraReport {
+  camera: string;
+  site: string;
+  owner: string;
+  inspectionDate: string; // The exact date of current inspection (e.g. 2026-09-22)
+  currentStatus: CameraStatus;
+  firstIssueDate: string;
+  latestIssueDate: string;
+  consecutiveDays: number;
+  totalIncidents: number;
+  lostCount: number;
+  unstableCount: number;
+  isFixed: boolean;
+  hasEvidence: boolean;
+  severity: 'Khẩn cấp (Mất tín hiệu)' | 'Cảnh báo (Chập chờn)' | 'Cần theo dõi';
+  diagnostics: string;
+  recommendedAction: string;
+  currentCondition: 'Đang mất kết nối' | 'Đang chập chờn' | 'Tái diễn liên tục';
+}
+
+export interface InspectionDayInfo {
+  date: string;
+  hasRecords: boolean;
+  totalRecords: number;
+  defectiveCount: number;
+  latestAvailableDate: string;
+}

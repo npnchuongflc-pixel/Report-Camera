@@ -3,6 +3,7 @@ import { FilterOptions, CameraAggregate } from './types/camera';
 import {
   computeDashboardData,
   exportCameraDataToCSV,
+  exportDefectiveCamerasToCSV,
   formatDateVN,
   AVAILABLE_MONTHS
 } from './data/cameraDataService';
@@ -12,6 +13,7 @@ import { KpiCards } from './components/KpiCards';
 import { InsightBanner } from './components/InsightBanner';
 import { ChartsSection } from './components/ChartsSection';
 import { CameraTable } from './components/CameraTable';
+import { DefectiveCamerasReportTable } from './components/DefectiveCamerasReportTable';
 import { CameraDetailModal } from './components/CameraDetailModal';
 import { Footer } from './components/Footer';
 
@@ -28,14 +30,24 @@ const INITIAL_FILTERS: FilterOptions = {
 
 export default function App() {
   const [filters, setFilters] = useState<FilterOptions>(INITIAL_FILTERS);
+  const [inspectionDate, setInspectionDate] = useState<string>('2026-09-21');
   const [selectedCamera, setSelectedCamera] = useState<CameraAggregate | null>(null);
 
-  // Computed dashboard data based on filters
+  // Computed dashboard data based on filters and inspectionDate
   const dashboardData = useMemo(() => {
-    return computeDashboardData(filters);
-  }, [filters]);
+    return computeDashboardData(filters, inspectionDate);
+  }, [filters, inspectionDate]);
 
-  const { kpis, cameraList, siteStatsList, dailyTrends, insight, filterOptions } = dashboardData;
+  const {
+    kpis,
+    cameraList,
+    defectiveCamerasReport,
+    inspectionDayInfo,
+    siteStatsList,
+    dailyTrends,
+    insight,
+    filterOptions
+  } = dashboardData;
 
   const handleFilterChange = (updated: Partial<FilterOptions>) => {
     setFilters((prev) => ({ ...prev, ...updated }));
@@ -68,7 +80,6 @@ export default function App() {
 
   const handleExportCSV = () => {
     const csvContent = exportCameraDataToCSV(cameraList);
-    // Add UTF-8 BOM so Vietnamese characters display properly in Excel
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -77,6 +88,22 @@ export default function App() {
       : `${filters.dateFrom}_den_${filters.dateTo}`;
     link.setAttribute('href', url);
     link.setAttribute('download', `CVSG_Camera_BaoCao_${periodSlug}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportDefectiveCSV = () => {
+    const csvContent = exportDefectiveCamerasToCSV(defectiveCamerasReport);
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const periodSlug = filters.periodMonth !== 'custom'
+      ? filters.periodMonth.replace('/', '-')
+      : `${filters.dateFrom}_den_${filters.dateTo}`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', `CVSG_Cam_Hu_Ngay_${inspectionDate.replace(/-/g, '')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -133,6 +160,18 @@ export default function App() {
         <CameraTable
           cameras={cameraList}
           onSelectCamera={setSelectedCamera}
+        />
+
+        {/* Báo Cáo Thống Kê Hiện Trạng Camera Đang Hư (Ở phía dưới cùng) */}
+        <DefectiveCamerasReportTable
+          defectiveList={defectiveCamerasReport}
+          cameraAggregates={cameraList}
+          periodLabel={periodLabel}
+          inspectionDate={inspectionDate}
+          inspectionDayInfo={inspectionDayInfo}
+          onInspectionDateChange={setInspectionDate}
+          onSelectCamera={setSelectedCamera}
+          onExportCSV={handleExportDefectiveCSV}
         />
       </main>
 
