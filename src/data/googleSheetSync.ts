@@ -100,56 +100,58 @@ export async function fetchGoogleSheetData(forceRefresh = false): Promise<{
 }> {
   const now = Date.now();
 
-  // Try cached data first if not forced
-  if (!forceRefresh) {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY_DATA);
-      const timeStr = localStorage.getItem(CACHE_KEY_TIME);
-      if (cached && timeStr) {
-        const cachedTime = parseInt(timeStr, 10);
-        if (now - cachedTime < CACHE_EXPIRY_MS) {
-          const records: RawCheckRow[] = JSON.parse(cached);
-          if (records && records.length > 0) {
-            return {
-              records,
-              fromCache: true,
-              lastSync: new Date(cachedTime).toLocaleTimeString('vi-VN')
-            };
-          }
-        }
-      }
-    } catch {
-      // fallback to network fetch
-    }
-  }
-
-  // Fetch live from Google Sheets
-  // Add timestamp query parameter to bypass browser caching
-  const fetchUrl = `${GOOGLE_SHEET_CSV_URL}&_t=${now}`;
-  const response = await fetch(fetchUrl);
-
-  if (!response.ok) {
-    throw new Error(`Không thể kết nối Google Sheets (HTTP ${response.status})`);
-  }
-
-  const csvText = await response.text();
-  const records = parseGoogleSheetCSV(csvText);
-
-  if (!records || records.length === 0) {
-    throw new Error('Dữ liệu tải về từ Google Sheets trống hoặc định dạng không đúng');
-  }
-
-  // Save to localStorage for instant startup next time
+  // Try direct network fetch first to ensure real-time accuracy
   try {
-    localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(records));
-    localStorage.setItem(CACHE_KEY_TIME, now.toString());
-  } catch {
-    // If local storage is full, just continue
+    const fetchUrl = `${GOOGLE_SHEET_CSV_URL}&_t=${now}`;
+    const response = await fetch(fetchUrl, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
+
+    if (response.ok) {
+      const csvText = await response.text();
+      const records = parseGoogleSheetCSV(csvText);
+
+      if (records && records.length > 0) {
+        // Update local backup
+        try {
+          localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(records));
+          localStorage.setItem(CACHE_KEY_TIME, now.toString());
+        } catch {
+          // ignore storage quota issues
+        }
+
+        return {
+          records,
+          fromCache: false,
+          lastSync: new Date(now).toLocaleTimeString('vi-VN')
+        };
+      }
+    }
+  } catch (networkErr) {
+    console.warn('Direct network fetch failed, trying local cache backup:', networkErr);
   }
 
-  return {
-    records,
-    fromCache: false,
-    lastSync: new Date(now).toLocaleTimeString('vi-VN')
-  };
+  // Fallback to local cache if network is unavailable
+  try {
+    const cached = localStorage.getItem(CACHE_KEY_DATA);
+    const timeStr = localStorage.getItem(CACHE_KEY_TIME);
+    if (cached) {
+      const records: RawCheckRow[] = JSON.parse(cached);
+      if (records && records.length > 0) {
+        const timeFormatted = timeStr
+          ? new Date(parseInt(timeStr, 10)).toLocaleTimeString('vi-VN')
+          : 'Lưu tạm';
+        return {
+          records,
+          fromCache: true,
+          lastSync: timeFormatted
+        };
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  throw new Error('Không thể kết nối đến Google Sheets và chưa có dữ liệu lưu tạm');
 }

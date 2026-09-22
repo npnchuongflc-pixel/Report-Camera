@@ -81,9 +81,28 @@ export default function App() {
     }
   }, []);
 
-  // Initial fetch on mount
+  // Initial fetch on mount & continuous live polling every 30 seconds
   useEffect(() => {
-    syncWithSheet(false);
+    // 1. Initial live sync
+    syncWithSheet(true);
+
+    // 2. Continuous background sync every 30 seconds
+    const interval = setInterval(() => {
+      syncWithSheet(true);
+    }, 30000);
+
+    // 3. Instant sync whenever user switches back to this tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncWithSheet(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [syncWithSheet]);
 
   // Computed dashboard data based on filters, inspectionDate, and liveRecords

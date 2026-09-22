@@ -208,10 +208,12 @@ export function computeDashboardData(
   const { dateFrom, dateTo, site, owner, status, searchQuery, evidenceOnly, periodMonth } = filters;
 
   // Check if we can use the official benchmark directly when looking at a clean month without sub-filters
+  // NOTE: For 09/2026, never freeze with benchmark because user updates records live daily!
   const isCleanMonthBenchmark =
     !customRecords &&
     periodMonth !== 'custom' &&
     periodMonth !== 'all' &&
+    periodMonth !== '09/2026' &&
     site === 'all' &&
     owner === 'all' &&
     status === 'all' &&
@@ -477,11 +479,7 @@ export function computeDashboardData(
   let insightText = '';
   let insightTag = 'Ưu tiên kiểm tra đường truyền & nguồn điện';
 
-  if (periodMonth === '09/2026' && site === 'all' && owner === 'all') {
-    insightTitle = 'Hà Đô là điểm cần ưu tiên trong tháng 09';
-    insightText = '71 lượt bất ổn, chiếm 53,0% toàn hệ thống; 5 camera tiếp tục có lỗi đến ngày 21/09.';
-    insightTag = 'Ưu tiên kiểm tra đường truyền & nguồn điện';
-  } else if (displayedSites.length > 0 && topSite.count > 0) {
+  if (displayedSites.length > 0 && topSite.count > 0) {
     const periodLabel = periodMonth !== 'custom' ? `tháng ${periodMonth}` : `khoảng đã chọn`;
     insightTitle = `${topSite.site} là điểm cần ưu tiên xử lý (${periodLabel})`;
     insightText = `${formatNumberVN(topSite.count)} lượt bất ổn, chiếm ${formatPctVN(topSite.count, kpis.totalIssues || 1)} toàn bộ sự cố ghi nhận. Ưu tiên kiểm tra thiết bị switch và dây mạng camera tái diễn nhiều lần.`;
