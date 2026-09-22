@@ -1,0 +1,6 @@
+{
+  "name": "Dashboard Quản Lý Camera — CVSG",
+  "description": "Hệ thống theo dõi độ ổn định, nhận diện điểm nghẽn và ưu tiên xử lý camera tại các cơ sở Trung tâm Cờ Vua Sài Gòn.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
