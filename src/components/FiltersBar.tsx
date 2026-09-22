@@ -86,7 +86,7 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
             type="date"
             value={filters.dateFrom}
             min={MIN_DATA_DATE}
-            max={MAX_DATA_DATE}
+            max="2030-12-31"
             onChange={(e) => handleDateChange('from', e.target.value)}
             className="w-full h-10 px-3 bg-white border border-[#e2e8f2] rounded-lg text-sm text-[#14213d] font-medium outline-none focus:border-[#2f6bff] focus:ring-2 focus:ring-[#2f6bff]/10 transition-all"
           />
@@ -101,7 +101,7 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
             type="date"
             value={filters.dateTo}
             min={MIN_DATA_DATE}
-            max={MAX_DATA_DATE}
+            max="2030-12-31"
             onChange={(e) => handleDateChange('to', e.target.value)}
             className="w-full h-10 px-3 bg-white border border-[#e2e8f2] rounded-lg text-sm text-[#14213d] font-medium outline-none focus:border-[#2f6bff] focus:ring-2 focus:ring-[#2f6bff]/10 transition-all"
           />

@@ -1,12 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { FilterOptions, CameraAggregate } from './types/camera';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { FilterOptions, CameraAggregate, RawCheckRow } from './types/camera';
 import {
   computeDashboardData,
   exportCameraDataToCSV,
   exportDefectiveCamerasToCSV,
   formatDateVN,
-  AVAILABLE_MONTHS
+  AVAILABLE_MONTHS,
+  setMaxDataDate,
+  MAX_DATA_DATE
 } from './data/cameraDataService';
+import { fetchGoogleSheetData } from './data/googleSheetSync';
 import { Header } from './components/Header';
 import { FiltersBar } from './components/FiltersBar';
 import { KpiCards } from './components/KpiCards';
@@ -33,10 +36,60 @@ export default function App() {
   const [inspectionDate, setInspectionDate] = useState<string>('2026-09-22');
   const [selectedCamera, setSelectedCamera] = useState<CameraAggregate | null>(null);
 
-  // Computed dashboard data based on filters and inspectionDate
+  // Live Google Sheet State
+  const [liveRecords, setLiveRecords] = useState<RawCheckRow[] | null>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Sync Google Sheets on startup and upon user refresh
+  const syncWithSheet = useCallback(async (forceRefresh = false) => {
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      const result = await fetchGoogleSheetData(forceRefresh);
+      if (result.records && result.records.length > 0) {
+        setLiveRecords(result.records);
+        setLastSyncTime(result.lastSync);
+
+        // Calculate latest date from records
+        let latest = '';
+        for (const r of result.records) {
+          if (!latest || r.date > latest) {
+            latest = r.date;
+          }
+        }
+
+        if (latest) {
+          setMaxDataDate(latest);
+          // If latest date is newer than current dateTo, update filters & inspectionDate
+          setFilters((prev) => {
+            if (prev.dateTo < latest && prev.periodMonth === '09/2026') {
+              return { ...prev, dateTo: latest };
+            }
+            return prev;
+          });
+          setInspectionDate((prev) => (prev < latest ? latest : prev));
+        }
+      }
+    } catch (err: unknown) {
+      console.warn('Google Sheet live sync notice:', err);
+      const msg = err instanceof Error ? err.message : 'Lỗi kết nối';
+      setSyncError(msg);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  // Initial fetch on mount
+  useEffect(() => {
+    syncWithSheet(false);
+  }, [syncWithSheet]);
+
+  // Computed dashboard data based on filters, inspectionDate, and liveRecords
   const dashboardData = useMemo(() => {
-    return computeDashboardData(filters, inspectionDate);
-  }, [filters, inspectionDate]);
+    return computeDashboardData(filters, inspectionDate, liveRecords || undefined);
+  }, [filters, inspectionDate, liveRecords]);
 
   const {
     kpis,
@@ -122,6 +175,11 @@ export default function App() {
         dateTo={filters.dateTo}
         onReset={handleReset}
         onExportCSV={handleExportCSV}
+        isSyncing={isSyncing}
+        lastSyncTime={lastSyncTime}
+        onRefreshData={() => syncWithSheet(true)}
+        totalLiveRecords={liveRecords ? liveRecords.length : undefined}
+        syncError={syncError}
       />
 
       {/* Main Container */}

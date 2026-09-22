@@ -124,7 +124,7 @@ export const DefectiveCamerasReportTable: React.FC<DefectiveCamerasReportTablePr
                 value={inspectionDate}
                 onChange={(e) => e.target.value && onInspectionDateChange(e.target.value)}
                 min="2026-03-01"
-                max="2026-09-22"
+                max="2030-12-31"
                 className="text-xs font-bold text-red-700 bg-transparent outline-none cursor-pointer"
               />
             </div>

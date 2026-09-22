@@ -174,7 +174,11 @@ export const AVAILABLE_MONTHS = [
 ];
 
 export const MIN_DATA_DATE = '2026-03-01';
-export const MAX_DATA_DATE = '2026-09-22';
+export let MAX_DATA_DATE = '2026-09-22';
+
+export function setMaxDataDate(d: string) {
+  MAX_DATA_DATE = d;
+}
 
 export function formatDateVN(dateStr: string): string {
   if (!dateStr) return '—';
@@ -195,11 +199,17 @@ export function formatPctVN(a: number, b: number): string {
 }
 
 // Filtering and aggregation engine
-export function computeDashboardData(filters: FilterOptions, targetInspectionDate?: string) {
+export function computeDashboardData(
+  filters: FilterOptions,
+  targetInspectionDate?: string,
+  customRecords?: RawCheckRow[]
+) {
+  const activeRecords = customRecords && customRecords.length > 0 ? customRecords : ALL_RAW_RECORDS;
   const { dateFrom, dateTo, site, owner, status, searchQuery, evidenceOnly, periodMonth } = filters;
 
   // Check if we can use the official benchmark directly when looking at a clean month without sub-filters
   const isCleanMonthBenchmark =
+    !customRecords &&
     periodMonth !== 'custom' &&
     periodMonth !== 'all' &&
     site === 'all' &&
@@ -210,7 +220,7 @@ export function computeDashboardData(filters: FilterOptions, targetInspectionDat
     MONTH_BENCHMARKS[periodMonth];
 
   // Base range records
-  const inRangeRecords = ALL_RAW_RECORDS.filter(
+  const inRangeRecords = activeRecords.filter(
     (r) => r.date >= dateFrom && r.date <= dateTo
   );
 
@@ -489,7 +499,7 @@ export function computeDashboardData(filters: FilterOptions, targetInspectionDat
   const inspectionDate = targetInspectionDate || (dateTo >= MAX_DATA_DATE ? MAX_DATA_DATE : dateTo);
 
   // Check records specifically on this target inspection date
-  const dayRecords = ALL_RAW_RECORDS.filter((r) => r.date === inspectionDate);
+  const dayRecords = activeRecords.filter((r) => r.date === inspectionDate);
   const dayHasRecords = dayRecords.length > 0;
 
   // Filter only broken/defective cameras on that date
@@ -504,7 +514,7 @@ export function computeDashboardData(filters: FilterOptions, targetInspectionDat
 
   const defectiveCamerasReport: DefectiveCameraReport[] = defectiveOnDay.map((rec) => {
     // Find all historical issues for this camera up to inspectionDate
-    const history = ALL_RAW_RECORDS.filter(
+    const history = activeRecords.filter(
       (r) => r.camera === rec.camera && r.date <= inspectionDate && (r.status === 'Mất kết nối' || r.status === 'Chập chờn')
     ).sort((a, b) => a.date.localeCompare(b.date));
 

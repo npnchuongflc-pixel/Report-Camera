@@ -1,23 +1,36 @@
 import React from 'react';
-import { Camera, RefreshCw, Download, CheckCircle2, ShieldCheck, Printer } from 'lucide-react';
+import { RefreshCw, Download, Printer, CheckCircle2, AlertCircle, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { formatDateVN } from '../data/cameraDataService';
+import { GOOGLE_SHEET_ID, GOOGLE_SHEET_GID } from '../data/googleSheetSync';
 
 interface HeaderProps {
   dateFrom: string;
   dateTo: string;
   onReset: () => void;
   onExportCSV: () => void;
+  isSyncing?: boolean;
+  lastSyncTime?: string | null;
+  onRefreshData?: () => void;
+  totalLiveRecords?: number;
+  syncError?: string | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   dateFrom,
   dateTo,
   onReset,
-  onExportCSV
+  onExportCSV,
+  isSyncing = false,
+  lastSyncTime,
+  onRefreshData,
+  totalLiveRecords,
+  syncError
 }) => {
   const handlePrint = () => {
     window.print();
   };
+
+  const sheetUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/edit#gid=${GOOGLE_SHEET_GID}`;
 
   return (
     <header className="bg-[#0b1838] text-white shadow-md sticky top-0 z-30 transition-all border-b border-[#1c2c54]">
@@ -43,23 +56,52 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Top Meta & Actions */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-[#cbd4e7] bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#cbd4e7] bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
             <span className="text-[#8e9ebc]">Thời gian:</span>
             <span className="font-semibold text-white">
               {formatDateVN(dateFrom)} – {formatDateVN(dateTo)}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1.5 rounded-lg">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="font-medium hidden sm:inline">Dữ liệu đã đồng bộ</span>
+          {/* Google Sheet Live Sync Badge */}
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg">
+            <a
+              href={sheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Mở Google Sheet dữ liệu gốc"
+              className="flex items-center gap-1.5 text-xs text-[#6ee7b7] hover:text-white transition-colors"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+              <span className="hidden xl:inline text-white/80">Google Sheets:</span>
+              <span className="font-semibold text-emerald-300">
+                {isSyncing ? 'Đang cập nhật...' : totalLiveRecords ? `${totalLiveRecords.toLocaleString('vi-VN')} dòng` : 'Đã kết nối'}
+              </span>
+            </a>
+
+            {lastSyncTime && !isSyncing && (
+              <span className="text-[10px] text-white/50 hidden md:inline border-l border-white/10 pl-2">
+                {lastSyncTime}
+              </span>
+            )}
+
+            {/* Refresh Button */}
+            {onRefreshData && (
+              <button
+                onClick={onRefreshData}
+                disabled={isSyncing}
+                title="Bấm để đồng bộ dữ liệu mới nhất từ Google Sheets"
+                className={`p-1 rounded text-white/70 hover:text-white hover:bg-white/10 transition-all cursor-pointer ${
+                  isSyncing ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-[#38bdf8]' : ''}`} />
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
+          <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 sm:pl-3">
             <button
               onClick={onExportCSV}
               title="Xuất dữ liệu CSV"
@@ -77,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={onReset}
-              title="Đặt lại chế độ xem"
+              title="Đặt lại bộ lọc"
               className="p-1.5 text-[#cbd4e7] hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer flex items-center justify-center"
             >
               <RefreshCw className="w-4 h-4" />
@@ -85,6 +127,14 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {syncError && (
+        <div className="bg-amber-600/90 text-white text-xs px-4 py-1 text-center font-medium flex items-center justify-center gap-1.5">
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>{syncError} (Đang dùng dữ liệu lưu tạm)</span>
+        </div>
+      )}
     </header>
   );
 };
+
