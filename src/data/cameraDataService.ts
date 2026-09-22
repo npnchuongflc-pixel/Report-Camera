@@ -164,7 +164,7 @@ export function getRawCheckRecords(): RawCheckRow[] {
 const ALL_RAW_RECORDS = getRawCheckRecords();
 
 export const AVAILABLE_MONTHS = [
-  { value: '09/2026', label: 'Tháng 09/2026', from: '2026-09-01', to: '2026-09-21' },
+  { value: '09/2026', label: 'Tháng 09/2026', from: '2026-09-01', to: '2026-09-22' },
   { value: '08/2026', label: 'Tháng 08/2026', from: '2026-08-01', to: '2026-08-31' },
   { value: '07/2026', label: 'Tháng 07/2026', from: '2026-07-01', to: '2026-07-31' },
   { value: '06/2026', label: 'Tháng 06/2026', from: '2026-06-01', to: '2026-06-30' },
@@ -174,7 +174,7 @@ export const AVAILABLE_MONTHS = [
 ];
 
 export const MIN_DATA_DATE = '2026-03-01';
-export const MAX_DATA_DATE = '2026-09-21';
+export const MAX_DATA_DATE = '2026-09-22';
 
 export function formatDateVN(dateStr: string): string {
   if (!dateStr) return '—';

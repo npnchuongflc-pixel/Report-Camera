@@ -425,5 +425,10 @@ export const RAW_PART_2: RawTuple[] = [
 ["2026-09-21","Hà Đô","HDC2","Chập chờn","Phạm Thái Bình Dương",false,true],
 ["2026-09-21","Hà Đô","HDC3","Chập chờn","Phạm Thái Bình Dương",false,true],
 ["2026-09-21","Hà Đô","HDC5","Mất kết nối","Phạm Thái Bình Dương",false,true],
-["2026-09-21","Hà Đô","HDC7","Chập chờn","Phạm Thái Bình Dương",false,true]
+["2026-09-21","Hà Đô","HDC7","Chập chờn","Phạm Thái Bình Dương",false,true],
+["2026-09-22","Hà Đô","HDC1","Chập chờn","Phạm Thái Bình Dương",false,true],
+["2026-09-22","Hà Đô","HDC2","Chập chờn","Phạm Thái Bình Dương",false,true],
+["2026-09-22","Hà Đô","HDC3","Chập chờn","Phạm Thái Bình Dương",false,true],
+["2026-09-22","Hà Đô","HDC5","Mất kết nối","Phạm Thái Bình Dương",false,true],
+["2026-09-22","Hà Đô","HDC7","Chập chờn","Phạm Thái Bình Dương",false,true]
 ];

@@ -79,14 +79,14 @@ export const DefectiveCamerasReportTable: React.FC<DefectiveCamerasReportTablePr
     }
   };
 
-  const latestDate = inspectionDayInfo?.latestAvailableDate || '2026-09-21';
+  const latestDate = inspectionDayInfo?.latestAvailableDate || '2026-09-22';
   const hasRecords = inspectionDayInfo ? inspectionDayInfo.hasRecords : true;
 
   const quickDates = [
-    { label: '21/09/2026 (Mới nhất có dữ liệu)', date: '2026-09-21' },
+    { label: 'Hôm nay (22/09/2026)', date: '2026-09-22' },
+    { label: 'Hôm qua (21/09/2026)', date: '2026-09-21' },
     { label: '20/09/2026', date: '2026-09-20' },
-    { label: '19/09/2026', date: '2026-09-19' },
-    { label: '18/09/2026', date: '2026-09-18' }
+    { label: '19/09/2026', date: '2026-09-19' }
   ];
 
   return (

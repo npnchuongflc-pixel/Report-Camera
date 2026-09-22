@@ -20,7 +20,7 @@ import { Footer } from './components/Footer';
 const INITIAL_FILTERS: FilterOptions = {
   periodMonth: '09/2026',
   dateFrom: '2026-09-01',
-  dateTo: '2026-09-21',
+  dateTo: '2026-09-22',
   site: 'all',
   owner: 'all',
   status: 'all',
@@ -30,7 +30,7 @@ const INITIAL_FILTERS: FilterOptions = {
 
 export default function App() {
   const [filters, setFilters] = useState<FilterOptions>(INITIAL_FILTERS);
-  const [inspectionDate, setInspectionDate] = useState<string>('2026-09-21');
+  const [inspectionDate, setInspectionDate] = useState<string>('2026-09-22');
   const [selectedCamera, setSelectedCamera] = useState<CameraAggregate | null>(null);
 
   // Computed dashboard data based on filters and inspectionDate
